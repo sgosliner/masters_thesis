@@ -1,0 +1,190 @@
+---
+title: "Thesis_Modeling"
+output: html_document
+---
+ 
+
+```{r setup, include=FALSE}
+#Overall data sheet, including all field locations and vegetation types
+
+Gosliner_Data <- read.csv("https://github.com/sgosliner/masters_thesis/raw/main/Gosliner_ThesisData.csv")
+
+
+head(Gosliner_Data)
+
+boxplot(Survival ~ Trophic_Treatment, data = Gosliner_Data)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+#ONLY GOLDENROD DATA
+library(ggplot2)
+library(lme4)
+library(ggeffects)
+
+Goldenrod <- read.csv("https://github.com/sgosliner/masters_thesis/raw/main/Goldenrod.csv")
+
+head(Goldenrod)
+
+hist(Goldenrod$Mass)
+#histogram of untransformed mass is right skewed
+
+hist(log(Goldenrod$Mass))
+#log transformed mass is more normally distributed
+
+Goldenrod$logMass <- log(Goldenrod$Mass + 1)
+
+Goldenrod$Stem_Height2 <- scale(Goldenrod$Stem_Height, center = TRUE, scale = TRUE)
+#standardizing average stem height such that mean = 0 and standard deviation = 1
+
+Goldenrod$Stem_Density2 <- scale(Goldenrod$Stem_Density, center = TRUE, scale = TRUE)
+#standardizing stem density such that mean = 0 and standard deviation = 1
+
+Goldenrod$Survival2 <- scale(Goldenrod$Survival, center = TRUE, scale = TRUE)
+#standardizing grasshopper survival such that mean = 0 and standard deviation = 1
+
+lm.Goldenrod <- lm(Mass ~ Trophic_Treatment + Invasive + Survival2 + Temp_Mean + Stem_Density2 + Stem_Height2, data = Goldenrod)
+#GLM predicting biomass from trophic treatment, invasive treatment, standardized grasshopper survival, average daily mean temperature, standardized mean stem height, and standardized steam density
+
+summary(lm.Goldenrod)
+
+plot(lm.Goldenrod)
+
+lm.Goldenrod_nosurv <- lm(Mass ~ Trophic_Treatment + Invasive + Temp_Mean + Stem_Density2 + Stem_Height2, data = Goldenrod)
+#same linear model as above but excludes Survival as an explanatory variable in order to include previously excluded NA values
+
+summary(lm.Goldenrod_nosurv)
+
+plot(lm.Goldenrod_nosurv)
+
+#lmer.Goldenrod <- lmer(Mass ~ Trophic_Treatment + Invasive + Survival2 + Temp_Mean + (1|Stem_Density2/Stem_Height2) , data = Goldenrod)
+
+#summary(lmer.Goldenrod)
+
+```
+
+
+```{r pressure, echo=FALSE}
+#MUGWORT ONLY DATA
+
+Mugwort <- read.csv("https://github.com/sgosliner/masters_thesis/raw/main/Mugwort.csv")
+
+hist(Mugwort$Mass, breaks = 9)
+#histogram of untransformed mass right skewed
+
+hist(log(Mugwort$Mass), breaks = 9)
+#log transformed mass more normally distributed
+
+Mugwort$logMass <- log(Mugwort$Mass + 1)
+
+Mugwort$Stem_Height2 <- scale(Mugwort$Stem_Height, center = TRUE, scale = TRUE)
+#standardizing average stem height such that mean = 0 and standard deviation = 1
+
+Mugwort$Stem_Density2 <- scale(Mugwort$Stem_Density, center = TRUE, scale = TRUE)
+#standardizing stem density such that mean = 0 and standard deviation = 1
+
+Mugwort$Survival2 <- scale(Mugwort$Survival, center = TRUE, scale = TRUE)
+#standardizing grasshopper survival such that mean = 0 and standard deviation = 1
+
+lm.Mugwort <- lm(Mass ~ Trophic_Treatment + Invasive + Survival2 + Temp_Mean + Stem_Density2 + Stem_Height2, data = Mugwort)
+#GLM predicting biomass from trophic treatment, invasive treatment, standardized grasshopper survival, average daily mean temperature, standardized mean stem height, and standardized steam density
+
+summary(lm.Mugwort)
+
+plot(lm.Mugwort)
+
+lm.Mugwort_nosurv <- lm(Mass ~ Trophic_Treatment + Invasive + Temp_Mean + Stem_Density2 + Stem_Height2, data = Mugwort)
+#same linear model as above but excludes Survival as an explanatory variable in order to include previously excluded NA values
+
+summary(lm.Mugwort_nosurv)
+
+plot(lm.Mugwort_nosurv)
+```
+
+```{r}
+#Grass Data Only
+
+Grass <- read.csv("https://github.com/sgosliner/masters_thesis/raw/main/Grass.csv")
+
+hist(Grass$Mass, breaks = 9)
+#histogram of untransformed mass right skewed
+
+hist(log(Grass$Mass))
+
+Grass$logMass <- log(Grass$Mass + 1)
+
+Grass$Survival2 <- scale(Grass$Survival, center = TRUE, scale = TRUE)
+#standardizing grasshopper survival such that mean = 0 and standard deviation = 1
+
+lm.Grass <- lm(Mass ~ Trophic_Treatment + Invasive + Survival2 + Temp_Mean, data = Grass)
+#GLM predicting biomass from trophic treatment, invasive treatment, standardized grasshopper survival, average daily mean temperature, standardized mean stem height, and standardized steam density
+
+summary(lm.Grass)
+
+plot(lm.Grass)
+
+lm.Grass_nosurv <- lm(Mass ~ Trophic_Treatment + Invasive + Temp_Mean, data = Grass)
+#same linear model as above but excludes Survival as an explanatory variable in order to include previously excluded NA values
+
+summary(lm.Grass_nosurv)
+
+plot(lm.Grass_nosurv)
+```
+
+```{r}
+#Other Data Only
+
+Other <- read.csv("https://github.com/sgosliner/masters_thesis/raw/main/Other.csv")
+
+hist(Other$Mass, breaks = 9)
+#histogram of untransformed mass right skewed
+
+hist(log(Other$Mass))
+
+Other$logMass <- log(Other$Mass + 1)
+
+Other$Survival2 <- scale(Other$Survival, center = TRUE, scale = TRUE)
+#standardizing grasshopper survival such that mean = 0 and standard deviation = 1
+
+lm.Other <- lm(Mass ~ Trophic_Treatment + Invasive + Survival2 + Temp_Mean, data = Other)
+#GLM predicting biomass from trophic treatment, invasive treatment, standardized grasshopper survival, average daily mean temperature, standardized mean stem height, and standardized steam density
+
+summary(lm.Other)
+
+plot(lm.Other)
+
+lm.Other_nosurv <- lm(Mass ~ Trophic_Treatment + Invasive + Temp_Mean, data = Other)
+#same linear model as above but excludes Survival as an explanatory variable in order to include previously excluded NA values
+
+summary(lm.Other_nosurv)
+
+plot(lm.Other_nosurv)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
