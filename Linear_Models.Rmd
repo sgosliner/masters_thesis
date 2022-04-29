@@ -11,11 +11,18 @@ output:
 
 Gosliner_Data <- read.csv("https://github.com/sgosliner/masters_thesis/raw/main/Gosliner_ThesisData.csv")
 
+#Creating density variables for goldenrod and mugwort. Cages are 0.25 m^2 so stem density = (count / 0.25)
+Gosliner_Data$Goldenrod_Density <- Gosliner_Data$Goldenrod_StemCount / 0.25
+Gosliner_Data$Mugwort_Density <- Gosliner_Data$Mugwort_StemCount / 0.25
+
+Gosliner_Data$Forb_Density <- Gosliner_Data$Goldenrod_Density + Gosliner_Data$Mugwort_Density
 
 head(Gosliner_Data)
 
-boxplot(Grasshopper_End ~ Trophic_Treatment, data = Gosliner_Data)
+Grasshoppers <- Gosliner_Data[Gosliner_Data$Trophic_Treatment %in% c("Herbivore", "Predator"), ]
+hist(Grasshoppers$Grasshopper_End)
 
+#boxplot(Mass ~ Trophic_Treatment, data = Gosliner_Data)
 #ggplot(aes(y = Grasshopper_End, x = Trophic_Treatment, fill = Invasive), data = Gosliner_Data) + geom_boxplot() + ylim(0, 3) + ggtitle("Plant Type vs. Invasive Status")
 ```
 
@@ -33,9 +40,9 @@ library(ggeffects)
 library(stargazer)
 library(lm.beta)
 
+#Goldenrod <- read.csv("https://github.com/sgosliner/masters_thesis/raw/main/Goldenrod.csv")
 
-
-Goldenrod <- read.csv("https://github.com/sgosliner/masters_thesis/raw/main/Goldenrod.csv")
+Goldenrod <- Gosliner_Data[Gosliner_Data$Plant %in% c("Goldenrod"), ]
 
 head(Goldenrod)
 
@@ -65,14 +72,17 @@ Goldenrod$Grasshopper_Avg2 <- scale(Goldenrod$Grasshopper_Avg, center = TRUE, sc
 #lm.Goldenrod <- lm(logBiomass ~ Trophic_Treatment + Invasive + Grasshopper_Avg2 + Temp_MeanDaily + Temp_MeanMax + Goldenrod_StemCount2 + Goldenrod_StemHeight2 + Mugwort_StemCount2 + Mugwort_StemHeight2, data = Goldenrod)
 #LM predicting biomass from trophic treatment, invasive treatment, standardized grasshopper survival, average daily mean temperature, standardized mean stem height, and standardized stem count
 
-lm.Goldenrod <- lm(logBiomass ~ Trophic_Treatment + Invasive + Grasshopper_Avg + Temp_MeanDaily + Temp_MeanMax + Goldenrod_StemCount + Goldenrod_StemHeight + Mugwort_StemCount + Mugwort_StemHeight, data = Goldenrod)
+lm.Goldenrod <- lm(logBiomass ~ Trophic_Treatment + Invasive + Grasshopper_Avg + Temp_MeanMax + Goldenrod_Density + Goldenrod_StemHeight + Mugwort_Density + Mugwort_StemHeight, data = Goldenrod)
 #lm using non-standardized inputs
+#lm without desired reference levels
 
 summary(lm.Goldenrod)
 
 lm.beta(lm.Goldenrod)
+#calculating beta coefficients for model
 
 summary(lm.beta(lm.Goldenrod))
+#summary of model with beta coefficients displayed ("standardized" column)
 
 #plot(lm.Goldenrod)
 
@@ -82,13 +92,74 @@ stargazer(lm.beta(lm.Goldenrod), type = "text",
           digit.separator = "")
 
 
+Goldenrod$Trophic <- as.factor(Goldenrod$Trophic_Treatment)
+#relabeling Trophic_Treatment variable as factor
+
+Goldenrod$InvStatus <- as.factor(Goldenrod$Invasive)
+#relabeling Invasive variable as factor
+
+lm.Goldenrod2 <- lm(logBiomass ~ relevel(Trophic, ref = "Plant") + relevel(InvStatus, ref = "Native") + Grasshopper_Avg + Temp_MeanMax + Goldenrod_Density + Goldenrod_StemHeight + Mugwort_Density + Mugwort_StemHeight, data = Goldenrod)
+#creating lm from duplicate dataset. relevel() function used to set reference levels for categorical variables
+#For Trophic variable, "plant" aka one trophic level used as reference
+#For InvStatus variable, "native" aka only goldenrod used as reference
+
+summary(lm.Goldenrod2)
+
+lm.beta(lm.Goldenrod2)
+
+summary(lm.beta(lm.Goldenrod2))
+
+stargazer(lm.beta(lm.Goldenrod2), type = "text",
+          digits = 3,
+          star.cutoffs = c(0.05, 0.01, 0.001),
+          digit.separator = "")
+```
+
+```{r}
+#Site specific goldenrod models
+#For site specific linear models, temperature components dropped because they are consistent within-sites
+
+#Wallingford goldenrod model
+Goldenrod.Wallingford <- Goldenrod[Goldenrod$Location %in% c("Wallingford"), ]
+#Creating dataframe with only Wallingford goldenrod data
+
+lm.Goldenrod.Wallingford <- lm(logBiomass ~ relevel(Trophic, ref = "Plant") + relevel(InvStatus, ref = "Native") + Grasshopper_Avg + Goldenrod_Density + Goldenrod_StemHeight + Mugwort_Density + Mugwort_StemHeight, data = Goldenrod.Wallingford)
+#creating lm from duplicate dataset. relevel() function used to set reference levels for categorical variables
+#For Trophic variable, "plant" aka one trophic level used as reference
+#For InvStatus variable, "native" aka only goldenrod used as reference
+
+summary(lm.beta(lm.Goldenrod.Wallingford))
+
+#WaterProp goldenrod model
+Goldenrod.WaterProp <- Goldenrod[Goldenrod$Location %in% c("WaterProp"), ]
+#Creating dataframe with only WaterProp goldenrod data
+
+lm.Goldenrod.WaterProp <- lm(logBiomass ~ relevel(Trophic, ref = "Plant") + relevel(InvStatus, ref = "Native") + Grasshopper_Avg + Goldenrod_Density + Goldenrod_StemHeight + Mugwort_Density + Mugwort_StemHeight, data = Goldenrod.WaterProp)
+#creating lm from duplicate dataset. relevel() function used to set reference levels for categorical variables
+#For Trophic variable, "plant" aka one trophic level used as reference
+#For InvStatus variable, "native" aka only goldenrod used as reference
+
+summary(lm.beta(lm.Goldenrod.WaterProp))
+
+#Flanders goldenrod model
+Goldenrod.Flanders <- Goldenrod[Goldenrod$Location %in% c("Flanders"), ]
+#Creating dataframe with only Flanders goldenrod data
+
+lm.Goldenrod.Flanders <- lm(logBiomass ~ relevel(Trophic, ref = "Plant") + relevel(InvStatus, ref = "Native") + Grasshopper_Avg + Goldenrod_Density + Goldenrod_StemHeight + Mugwort_Density + Mugwort_StemHeight, data = Goldenrod.Flanders)
+#creating lm from duplicate dataset. relevel() function used to set reference levels for categorical variables
+#For Trophic variable, "plant" aka one trophic level used as reference
+#For InvStatus variable, "native" aka only goldenrod used as reference
+
+summary(lm.beta(lm.Goldenrod.Flanders))
 ```
 
 
 ```{r pressure, echo=FALSE}
 #MUGWORT ONLY DATA
 
-Mugwort <- read.csv("https://github.com/sgosliner/masters_thesis/raw/main/Mugwort.csv")
+#Mugwort <- read.csv("https://github.com/sgosliner/masters_thesis/raw/main/Mugwort.csv")
+
+Mugwort <- Gosliner_Data[Gosliner_Data$Plant %in% c("Mugwort"), ]
 
 hist(Mugwort$Biomass)
 #histogram of untransformed mass is right skewed
@@ -116,7 +187,7 @@ Mugwort$Grasshopper_Avg2 <- scale(Mugwort$Grasshopper_Avg, center = TRUE, scale 
 #lm.Mugwort <- lm(logBiomass ~ Trophic_Treatment + Invasive + Grasshopper_Avg2 + Temp_MeanDaily + Temp_MeanMax + Goldenrod_StemCount2 + Goldenrod_StemHeight2 + Mugwort_StemCount2 + Mugwort_StemHeight2, data = Mugwort)
 #GLM predicting biomass from trophic treatment, invasive treatment, standardized grasshopper survival, average daily mean temperature, standardized mean stem height, and standardized steam density
 
-lm.Mugwort <- lm(logBiomass ~ Trophic_Treatment + Invasive + Grasshopper_Avg + Temp_MeanDaily + Temp_MeanMax + Goldenrod_StemCount + Goldenrod_StemHeight + Mugwort_StemCount + Mugwort_StemHeight, data = Mugwort)
+lm.Mugwort <- lm(logBiomass ~ Trophic_Treatment + Invasive + Grasshopper_Avg + Temp_MeanDaily + Temp_MeanMax + Goldenrod_Density + Goldenrod_StemHeight + Mugwort_Density + Mugwort_StemHeight, data = Mugwort)
 #lm using non-standardized input data
 
 summary(lm.Mugwort)
@@ -124,12 +195,67 @@ summary(lm.Mugwort)
 plot(lm.Mugwort)
 
 summary(lm.beta(lm.Mugwort))
+
+Mugwort$Trophic <- as.factor(Mugwort$Trophic_Treatment)
+#relabeling Trophic_Treatment variable as factor
+
+Mugwort$InvStatus <- as.factor(Mugwort$Invasive)
+#relabeling Invasive variable as factor
+
+lm.Mugwort2 <- lm(logBiomass ~ relevel(Trophic, ref = "Plant") + relevel(InvStatus, ref = "Invasive") + Grasshopper_Avg + Temp_MeanMax + Goldenrod_Density + Goldenrod_StemHeight + Mugwort_Density + Mugwort_StemHeight, data = Mugwort)
+#creating lm from duplicate dataset. relevel() function used to set reference levels for categorical variables
+#For Trophic variable, "plant" aka one trophic level used as reference
+#For InvStatus variable, "invasive" aka only mugwort used as reference
+
+summary(lm.beta(lm.Mugwort2))
 ```
+
+```{r}
+#Site specific Mugwort models
+#For site specific linear models, temperature components dropped because they are consistent within-sites
+
+#Wallingford Mugwort model
+Mugwort.Wallingford <- Mugwort[Mugwort$Location %in% c("Wallingford"), ]
+#Creating dataframe with only Wallingford Mugwort data
+
+lm.Mugwort.Wallingford <- lm(logBiomass ~ relevel(Trophic, ref = "Plant") + relevel(InvStatus, ref = "Invasive") + Grasshopper_Avg + Goldenrod_Density + Goldenrod_StemHeight + Mugwort_Density + Mugwort_StemHeight, data = Mugwort.Wallingford)
+#creating lm from duplicate dataset. relevel() function used to set reference levels for categorical variables
+#For Trophic variable, "plant" aka one trophic level used as reference
+#For InvStatus variable, "invasive" aka only Mugwort used as reference
+
+summary(lm.beta(lm.Mugwort.Wallingford))
+
+#WaterProp Mugwort model
+Mugwort.WaterProp <- Mugwort[Mugwort$Location %in% c("WaterProp"), ]
+#Creating dataframe with only WaterProp Mugwort data
+
+lm.Mugwort.WaterProp <- lm(logBiomass ~ relevel(Trophic, ref = "Plant") + relevel(InvStatus, ref = "Invasive") + Grasshopper_Avg + Goldenrod_Density + Goldenrod_StemHeight + Mugwort_Density + Mugwort_StemHeight, data = Mugwort.WaterProp)
+#creating lm from duplicate dataset. relevel() function used to set reference levels for categorical variables
+#For Trophic variable, "plant" aka one trophic level used as reference
+#For InvStatus variable, "invasive" aka only Mugwort used as reference
+
+summary(lm.beta(lm.Mugwort.WaterProp))
+
+#Flanders Mugwort model
+Mugwort.Flanders <- Mugwort[Mugwort$Location %in% c("Flanders"), ]
+#Creating dataframe with only Flanders Mugwort data
+
+lm.Mugwort.Flanders <- lm(logBiomass ~ relevel(Trophic, ref = "Plant") + relevel(InvStatus, ref = "Invasive") + Grasshopper_Avg + Goldenrod_Density + Goldenrod_StemHeight + Mugwort_Density + Mugwort_StemHeight, data = Mugwort.Flanders)
+#creating lm from duplicate dataset. relevel() function used to set reference levels for categorical variables
+#For Trophic variable, "plant" aka one trophic level used as reference
+#For InvStatus variable, "invasive" aka only Mugwort used as reference
+
+summary(lm.beta(lm.Mugwort.Flanders))
+```
+
+
 
 ```{r}
 #Grass Data Only
 
-Grass <- read.csv("https://github.com/sgosliner/masters_thesis/raw/main/Grass.csv")
+#Grass <- read.csv("https://github.com/sgosliner/masters_thesis/raw/main/Grass.csv")
+
+Grass <- Gosliner_Data[Gosliner_Data$Plant %in% c("Grass"), ]
 
 hist(Grass$Biomass)
 #histogram of untransformed mass is right skewed
@@ -157,7 +283,7 @@ Grass$Grasshopper_Avg2 <- scale(Grass$Grasshopper_Avg, center = TRUE, scale = TR
 #lm.Grass <- lm(logBiomass ~ Trophic_Treatment + Invasive + Grasshopper_Avg2 + Temp_MeanDaily + Temp_MeanMax + Goldenrod_StemCount2 + Goldenrod_StemHeight2 + Mugwort_StemCount2 + Mugwort_StemHeight2, data = Grass)
 #GLM predicting biomass from trophic treatment, invasive treatment, standardized grasshopper survival, average daily mean temperature, standardized mean stem height, and standardized steam density
 
-lm.Grass <- lm(logBiomass ~ Trophic_Treatment + Invasive + Grasshopper_Avg + Temp_MeanDaily + Temp_MeanMax + Goldenrod_StemCount + Goldenrod_StemHeight + Mugwort_StemCount + Mugwort_StemHeight, data = Grass)
+lm.Grass <- lm(logBiomass ~ Trophic_Treatment + Invasive + Grasshopper_Avg + Temp_MeanDaily + Temp_MeanMax + Goldenrod_Density + Goldenrod_StemHeight + Mugwort_Density + Mugwort_StemHeight, data = Grass)
 #lm using non-standardized input data
 
 summary(lm.Grass)
@@ -165,12 +291,69 @@ summary(lm.Grass)
 plot(lm.Grass)
 
 summary(lm.beta(lm.Grass))
+
+Grass$Trophic <- as.factor(Grass$Trophic_Treatment)
+#relabeling Trophic_Treatment variable as factor
+
+Grass$InvStatus <- as.factor(Grass$Invasive)
+#relabeling Invasive variable as factor
+
+lm.Grass2 <- lm(logBiomass ~ relevel(Trophic, ref = "Plant") + relevel(InvStatus, ref = "Native") + Grasshopper_Avg + Temp_MeanMax + Goldenrod_Density + Goldenrod_StemHeight + Mugwort_Density + Mugwort_StemHeight, data = Grass)
+#creating lm from duplicate dataset. relevel() function used to set reference levels for categorical variables
+#For Trophic variable, "plant" aka one trophic level used as reference
+#For InvStatus variable, "native" aka only goldenrod used as reference
+
+summary(lm.beta(lm.Grass2))
+
 ```
+
+```{r}
+#Site specific Grass models
+#For site specific linear models, temperature components dropped because they are consistent within-sites
+
+#Wallingford Grass model
+Grass.Wallingford <- Grass[Grass$Location %in% c("Wallingford"), ]
+#Creating dataframe with only Wallingford Grass data
+
+lm.Grass.Wallingford <- lm(logBiomass ~ relevel(Trophic, ref = "Plant") + relevel(InvStatus, ref = "Native") + Grasshopper_Avg + Goldenrod_Density + Goldenrod_StemHeight + Mugwort_Density + Mugwort_StemHeight, data = Grass.Wallingford)
+#creating lm from duplicate dataset. relevel() function used to set reference levels for categorical variables
+#For Trophic variable, "plant" aka one trophic level used as reference
+#For InvStatus variable, "native" aka only Grass used as reference
+
+summary(lm.beta(lm.Grass.Wallingford))
+
+#WaterProp Grass model
+Grass.WaterProp <- Grass[Grass$Location %in% c("WaterProp"), ]
+#Creating dataframe with only WaterProp Grass data
+
+lm.Grass.WaterProp <- lm(logBiomass ~ relevel(Trophic, ref = "Plant") + relevel(InvStatus, ref = "Native") + Grasshopper_Avg + Goldenrod_Density + Goldenrod_StemHeight + Mugwort_Density + Mugwort_StemHeight, data = Grass.WaterProp)
+#creating lm from duplicate dataset. relevel() function used to set reference levels for categorical variables
+#For Trophic variable, "plant" aka one trophic level used as reference
+#For InvStatus variable, "native" aka only Grass used as reference
+
+summary(lm.beta(lm.Grass.WaterProp))
+
+#Flanders Grass model
+Grass.Flanders <- Grass[Grass$Location %in% c("Flanders"), ]
+#Creating dataframe with only Flanders Grass data
+
+lm.Grass.Flanders <- lm(logBiomass ~ relevel(Trophic, ref = "Plant") + relevel(InvStatus, ref = "Native") + Grasshopper_Avg + Goldenrod_Density + Goldenrod_StemHeight + Mugwort_Density + Mugwort_StemHeight, data = Grass.Flanders)
+#creating lm from duplicate dataset. relevel() function used to set reference levels for categorical variables
+#For Trophic variable, "plant" aka one trophic level used as reference
+#For InvStatus variable, "native" aka only Grass used as reference
+
+summary(lm.beta(lm.Grass.Flanders))
+
+summary(lm.Grass.Flanders)
+```
+
 
 ```{r}
 #Other Data Only
 
-Other <- read.csv("https://github.com/sgosliner/masters_thesis/raw/main/Other.csv")
+#Other <- read.csv("https://github.com/sgosliner/masters_thesis/raw/main/Other.csv")
+
+Other <- Gosliner_Data[Gosliner_Data$Plant %in% c("Other"), ]
 
 hist(Other$Biomass)
 #histogram of untransformed mass is right skewed
@@ -198,7 +381,7 @@ Other$Grasshopper_Avg2 <- scale(Other$Grasshopper_Avg, center = TRUE, scale = TR
 #lm.Other <- lm(logBiomass ~ Trophic_Treatment + Invasive + Grasshopper_Avg2 + Temp_MeanDaily + Temp_MeanMax + Goldenrod_StemCount2 + Goldenrod_StemHeight2 + Mugwort_StemCount2 + Mugwort_StemHeight2, data = Other)
 #GLM predicting biomass from trophic treatment, invasive treatment, standardized grasshopper survival, average daily mean temperature, standardized mean stem height, and standardized steam density
 
-lm.Other <- lm(logBiomass ~ Trophic_Treatment + Invasive + Grasshopper_Avg + Temp_MeanDaily + Temp_MeanMax + Goldenrod_StemCount + Goldenrod_StemHeight + Mugwort_StemCount + Mugwort_StemHeight, data = Other)
+lm.Other <- lm(logBiomass ~ Trophic_Treatment + Invasive + Grasshopper_Avg + Temp_MeanDaily + Temp_MeanMax + Goldenrod_Density + Goldenrod_StemHeight + Mugwort_Density + Mugwort_StemHeight, data = Other)
 #lm with non-standardized input data
 
 summary(lm.Other)
@@ -206,12 +389,340 @@ summary(lm.Other)
 plot(lm.Other)
 
 summary(lm.beta(lm.Other))
+
+Other$Trophic <- as.factor(Other$Trophic_Treatment)
+#relabeling Trophic_Treatment variable as factor
+
+Other$InvStatus <- as.factor(Other$Invasive)
+#relabeling Invasive variable as factor
+
+lm.Other2 <- lm(logBiomass ~ relevel(Trophic, ref = "Plant") + relevel(InvStatus, ref = "Native") + Grasshopper_Avg + Temp_MeanMax + Goldenrod_Density + Goldenrod_StemHeight + Mugwort_Density + Mugwort_StemHeight, data = Other)
+#creating lm from duplicate dataset. relevel() function used to set reference levels for categorical variables
+#For Trophic variable, "plant" aka one trophic level used as reference
+#For InvStatus variable, "native" aka only goldenrod used as reference
+
+summary(lm.beta(lm.Other2))
+
+
+
+
+
+#stripchart(Grass$Mugwort_Density ~ Grass$logBiomass, method = "jitter")
+```
+
+```{r}
+#Site specific Other models
+#For site specific linear models, temperature components dropped because they are consistent within-sites
+
+#Wallingford Other model
+Other.Wallingford <- Other[Other$Location %in% c("Wallingford"), ]
+#Creating dataframe with only Wallingford Other data
+
+lm.Other.Wallingford <- lm(logBiomass ~ relevel(Trophic, ref = "Plant") + relevel(InvStatus, ref = "Native") + Grasshopper_Avg + Goldenrod_Density + Goldenrod_StemHeight + Mugwort_Density + Mugwort_StemHeight, data = Other.Wallingford)
+#creating lm from duplicate dataset. relevel() function used to set reference levels for categorical variables
+#For Trophic variable, "plant" aka one trophic level used as reference
+#For InvStatus variable, "native" aka only Other used as reference
+
+summary(lm.beta(lm.Other.Wallingford))
+
+#WaterProp Other model
+Other.WaterProp <- Other[Other$Location %in% c("WaterProp"), ]
+#Creating dataframe with only WaterProp Other data
+
+lm.Other.WaterProp <- lm(logBiomass ~ relevel(Trophic, ref = "Plant") + relevel(InvStatus, ref = "Native") + Grasshopper_Avg + Goldenrod_Density + Goldenrod_StemHeight + Mugwort_Density + Mugwort_StemHeight, data = Other.WaterProp)
+#creating lm from duplicate dataset. relevel() function used to set reference levels for categorical variables
+#For Trophic variable, "plant" aka one trophic level used as reference
+#For InvStatus variable, "native" aka only Other used as reference
+
+summary(lm.beta(lm.Other.WaterProp))
+
+#Flanders Other model
+Other.Flanders <- Other[Other$Location %in% c("Flanders"), ]
+#Creating dataframe with only Flanders Other data
+
+lm.Other.Flanders <- lm(logBiomass ~ relevel(Trophic, ref = "Plant") + relevel(InvStatus, ref = "Native") + Grasshopper_Avg + Goldenrod_Density + Goldenrod_StemHeight + Mugwort_Density + Mugwort_StemHeight, data = Other.Flanders)
+#creating lm from duplicate dataset. relevel() function used to set reference levels for categorical variables
+#For Trophic variable, "plant" aka one trophic level used as reference
+#For InvStatus variable, "native" aka only Other used as reference
+
+summary(lm.beta(lm.Other.Flanders))
+```
+
+```{r}
+#Native-only linear model analysis
+
+Native.Goldenrod <- Goldenrod[Goldenrod$Invasive %in% c("Native"), ]
+
+lm.NatGold <- lm(logBiomass ~ relevel(Trophic, ref = "Plant") + Temp_MeanDaily + Temp_MeanMax + Goldenrod_Density + Goldenrod_StemHeight, data = Native.Goldenrod)
+#lm with non-standardized input data
+
+summary(lm.beta(lm.NatGold))
+
+
+
+
+Native.Grass <- Grass[Grass$Invasive %in% c("Native"), ]
+
+lm.NatGrass <- lm(logBiomass ~ relevel(Trophic, ref = "Plant") + Temp_MeanDaily + Temp_MeanMax + Goldenrod_Density + Goldenrod_StemHeight, data = Native.Grass)
+#lm with non-standardized input data
+
+summary(lm.beta(lm.NatGrass))
+
+
+
+
+Native.Other <- Other[Other$Invasive %in% c("Native"), ]
+
+lm.NatOther <- lm(logBiomass ~ relevel(Trophic, ref = "Plant") + Temp_MeanDaily + Temp_MeanMax + Goldenrod_Density + Goldenrod_StemHeight, data = Native.Other)
+#lm with non-standardized input data
+
+summary(lm.beta(lm.NatOther))
+```
+
+```{r}
+#Mixed-only linear model analysis
+
+Mixed.Goldenrod <- Goldenrod[Goldenrod$Invasive %in% c("Mixed"), ]
+
+lm.MixedGold <- lm(logBiomass ~ relevel(Trophic, ref = "Plant") + Temp_MeanDaily + Temp_MeanMax + Goldenrod_Density + Goldenrod_StemHeight + Mugwort_Density + Mugwort_StemHeight, data = Mixed.Goldenrod)
+#lm with non-standardized input data
+
+summary(lm.beta(lm.MixedGold))
+
+
+
+
+Mixed.Mugwort <- Mugwort[Mugwort$Invasive %in% c("Mixed"), ]
+
+lm.MixedMug <- lm(logBiomass ~ relevel(Trophic, ref = "Plant") + Temp_MeanDaily + Temp_MeanMax + Goldenrod_Density + Goldenrod_StemHeight + Mugwort_Density + Mugwort_StemHeight, data = Mixed.Mugwort)
+#lm with non-standardized input data
+
+summary(lm.beta(lm.MixedMug))
+
+
+
+
+Mixed.Grass<- Grass[Grass$Invasive %in% c("Mixed"), ]
+
+lm.MixedGrass <- lm(logBiomass ~ relevel(Trophic, ref = "Plant") + Temp_MeanDaily + Temp_MeanMax + Goldenrod_Density + Goldenrod_StemHeight + Mugwort_Density + Mugwort_StemHeight, data = Mixed.Grass)
+#lm with non-standardized input data
+
+summary(lm.beta(lm.MixedGrass))
+
+
+
+
+Mixed.Other<- Other[Other$Invasive %in% c("Mixed"), ]
+
+lm.MixedOther <- lm(logBiomass ~ relevel(Trophic, ref = "Plant") + Temp_MeanDaily + Temp_MeanMax + Goldenrod_Density + Goldenrod_StemHeight + Mugwort_Density + Mugwort_StemHeight, data = Mixed.Other)
+#lm with non-standardized input data
+
+summary(lm.beta(lm.MixedOther))
+```
+
+```{r}
+#Invasive-only linear model analysis
+
+Invasive.Mugwort <- Mugwort[Mugwort$Invasive %in% c("Invasive"), ]
+
+lm.InvMug <- lm(logBiomass ~ relevel(Trophic, ref = "Plant") + Temp_MeanDaily + Temp_MeanMax + Mugwort_Density + Mugwort_StemHeight, data = Invasive.Mugwort)
+#lm with non-standardized input data
+
+summary(lm.beta(lm.InvMug))
+
+
+
+
+Invasive.Grass <- Grass[Grass$Invasive %in% c("Invasive"), ]
+
+lm.InvGrass <- lm(logBiomass ~ relevel(Trophic, ref = "Plant") + Temp_MeanDaily + Temp_MeanMax + Mugwort_Density + Mugwort_StemHeight, data = Invasive.Grass)
+#lm with non-standardized input data
+
+summary(lm.beta(lm.InvGrass))
+
+
+
+
+Invasive.Other <- Other[Other$Invasive %in% c("Invasive"), ]
+
+lm.InvOther <- lm(logBiomass ~ relevel(Trophic, ref = "Plant") + Temp_MeanDaily + Temp_MeanMax + Mugwort_Density + Mugwort_StemHeight, data = Invasive.Other)
+#lm with non-standardized input data
+
+summary(lm.beta(lm.InvOther))
 ```
 
 
 
+```{r}
+#Biomass vs. stem count data and plots
+
+library(segmented)
+
+Grass$col <- (as.integer(as.factor(Grass$Invasive))+1)
+
+boxplot(logBiomass ~ Invasive, data = Grass)
+
+stripchart(logBiomass ~ Invasive, data = Grass,              # Data
+           method = "jitter", # Random noise
+           pch = 19,          # Pch symbols
+           col = 4,           # Color of the symbol
+           vertical = TRUE,   # Vertical mode
+           add = TRUE)        # Add it over
+
+freq <- c(table(Grass$Mugwort_Density, Grass$logBiomass))
+
+#fit simple linear regression model
+Grass.Invasive <- Grass[Grass$Invasive %in% c("Invasive", "Mixed"), ]
+fit.mug <- lm(logBiomass ~ Mugwort_Density, data=Grass.Invasive)
+
+#fit piecewise regression model to original model, estimating a breakpoint at x=52
+segmented.fit.mug <- segmented(fit.mug, seg.Z = ~Mugwort_Density, psi=52)
+
+#view summary of segmented model
+summary(segmented.fit.mug)
 
 
+Grass.Native <- Grass[Grass$Invasive %in% c("Native", "Mixed"), ]
+#fit simple linear regression model
+fit.gold <- lm(logBiomass ~ Goldenrod_Density, data=Grass.Native)
+
+#fit piecewise regression model to original model, estimating a breakpoint at x=52
+segmented.fit.gold <- segmented(fit.gold, seg.Z = ~Goldenrod_Density, psi=52)
+
+#view summary of segmented model
+summary(segmented.fit.gold)
+
+
+
+plot(jitter(Grass$Mugwort_Density, factor = 1), jitter(Grass$logBiomass, factor = 1), pch=16, ## filled in circles,
+  col=(as.integer(as.factor(Grass$Invasive))+1), xlim = c(0, 120), ylab = "log(Grass Biomass)", xlab = "Mugwort Stem Density",
+  main = "Mugwort"
+)
+legend('topright', legend = levels(as.factor(Grass$Invasive)), col = 2:4, cex = 1, pch = 16)
+plot(segmented.fit.mug, add=T)
+
+plot(jitter(Grass$Goldenrod_Density, factor = 1), jitter(Grass$logBiomass, factor = 1), pch=16, ## filled in circles,
+  col=(as.integer(as.factor(Grass$Invasive))+1), xlim = c(0, 120), ylab = "log(Grass Biomass)", xlab = "Goldenrod Stem Density",
+  main = "Goldenrod"
+)
+legend('topright', legend = levels(as.factor(Grass$Invasive)), col = 2:4, cex = 1, pch = 16)
+plot(segmented.fit.gold, add=T)
+
+
+
+plot(jitter(Grass.Invasive$Mugwort_Density, factor = 1), jitter(Grass.Invasive$logBiomass, factor = 1), pch=16, ## filled in circles,
+  col=(as.integer(as.factor(Grass.Invasive$Invasive))+2), ylab = "log(Grass Biomass)", xlab = "Mugwort Stem Density",
+  main = "Mugwort"
+)
+legend('topright', legend = levels(as.factor(Grass.Invasive$Invasive)), col = 3:4, cex = 1, pch = 16)
+
+plot(segmented.fit.mug, add=T)
+
+davies.test(fit.mug)
+
+
+
+
+plot(jitter(Grass.Native$Goldenrod_Density, factor = 1), jitter(Grass.Native$logBiomass, factor = 1), pch=16, ## filled in circles,
+  col= (as.integer(as.factor(Grass.Native$Invasive))+1), ylab = "log(Grass Biomass)", xlab = "Goldenrod Stem Density",
+  main = "Goldenrod"
+)
+legend('topright', legend = levels(as.factor(Grass.Native$Invasive)), col = 2:4, cex = 1, pch = 16)
+plot(segmented.fit.gold, add=T)
+
+davies.test(fit.gold)
+
+
+
+```
+
+
+```{r}
+lm.Inv.Forb <- lm(logBiomass ~ Forb_Density, data=Grass[Grass$Invasive %in% c("Invasive"), ])
+#creating linear model for grass biomass by forb density using only invasive data
+
+lm.Nat.Forb <- lm(logBiomass ~ Forb_Density, data=Grass[Grass$Invasive %in% c("Native"), ])
+#creating linear model for grass biomass by forb density using only native data
+
+lm.Mixed.Forb <- lm(logBiomass ~ Forb_Density, data=Grass[Grass$Invasive %in% c("Mixed"), ])
+#creating linear model for grass biomass by forb density using only mixed data
+
+
+summary(lm.beta(lm.Mixed.Forb))
+summary(lm.beta(lm.Nat.Forb))
+summary(lm.beta(lm.Inv.Forb))
+
+plot(jitter(Grass$Forb_Density, factor = 0), jitter(Grass$logBiomass, factor = 0), pch=16, ## filled in circles,
+  col=(as.integer(as.factor(Grass$Invasive))+1), xlim = c(0, 120), ylab = "log(Grass Biomass)", xlab = expression("Dominant Forb Density (stems / m"^"2"*")"),
+  main = "Effect of Dominant Forbs on Grass"
+)
+legend('topright', legend = levels(as.factor(Grass$Invasive)), col = 2:4, cex = 1, pch = 16)
+clip(8, 116, 0, 100)
+abline(lm.Nat.Forb, col = 4, lwd = 2)
+clip(24, 104, 0, 100)
+abline(lm.Inv.Forb, col = 2, lwd = 2)
+clip(24, 96, 0, 100)
+abline(lm.Mixed.Forb, col = 3, lwd = 2)
+
+summary(Mixed.Grass$Forb_Density)
+
+fit.forb <- lm(logBiomass ~ Forb_Density, data=Grass)
+summary(fit.forb)
+
+
+
+```
+ova
+
+```{r}
+#Mugwort vs. goldenrod stem density by location
+
+MixedPlots <- Gosliner_Data[Gosliner_Data$Invasive %in% c("Mixed"), ]
+#Creating dataframe with only mixed plot data
+
+lm.Flanders.Stem <- lm(Goldenrod_Density ~ Mugwort_Density, data = MixedPlots[MixedPlots$Location %in% c("Flanders"), ])
+#creating linear model for goldenrod stem count by mugwort stem count using only flanders data
+
+lm.Wallingford.Stem <- lm(Goldenrod_Density ~ Mugwort_Density, data = MixedPlots[MixedPlots$Location %in% c("Wallingford"), ])
+#creating linear model for goldenrod stem count by mugwort stem count using only wallingford data
+
+lm.WaterProp.Stem <- lm(Goldenrod_Density ~ Mugwort_Density, data = MixedPlots[MixedPlots$Location %in% c("WaterProp"), ])
+#creating linear model for goldenrod stem count by mugwort stem count using only waterprop data
+
+plot(MixedPlots$Mugwort_Density, MixedPlots$Goldenrod_Density, pch=16, ## filled in circles,
+  col=(as.integer(as.factor(MixedPlots$Location))+1), xlim = c(0, 70), ylab = expression("S. rugosa Density (stems / m"^"2"*")"), xlab = expression("A. vulgaris Density (stems / m"^"2"*")")
+  )
+#legend('topright', legend = c("Flanders","Wallingford", "Branford"), col = 2:4, cex = 1, pch = 16)
+#plotting goldenrod stem count by mugwort stem count, points colored by location
+clip(4, 48, 0, 100)
+abline(lm.Flanders.Stem, col = 2, lwd = 2)
+#adding flander regression line
+clip(16, 64, 0, 100)
+abline(lm.Wallingford.Stem, col = 3, lwd = 2)
+#adding wallingford regression line
+clip(12, 64, 0, 100)
+abline(lm.WaterProp.Stem, col = 4, lwd = 2)
+#adding waterprop regression line
+
+
+summary(lm.beta(lm.Flanders.Stem))
+summary(lm.beta(lm.Wallingford.Stem))
+summary(lm.beta(lm.WaterProp.Stem))
+```
+
+```{r}
+GrasshopperPlots <- Gosliner_Data[Gosliner_Data$Trophic_Treatment %in% c("Herbivore", "Predator"), ]
+#Creating dataframe with only plots containing grasshoppers
+
+Gosliner_Data
+
+plot(GrasshopperPlots$Mugwort_StemCount, GrasshopperPlots$Grasshopper_Avg, pch=16, ylim = c(0, 4), ## filled in circles,
+  col=(as.integer(as.factor(Gosliner_Data$Location))+1), ylab = "Grasshopper Average", xlab = "Mugwort Stem Count"## colour by region, skipping black
+)
+legend('topright', legend = levels(as.factor(GrasshopperPlots$Location)), col = 2:4, cex = 1, pch = 16)
+
+hist(GrasshopperPlots$Mugwort_StemCount)
+```
 
 
 
