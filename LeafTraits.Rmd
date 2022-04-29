@@ -1,0 +1,101 @@
+---
+title: "Leaf Traits"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+#Both Plant Types
+
+Leaf_Traits <- read.csv("https://github.com/sgosliner/masters_thesis/raw/main/Gosliner_MastersLeafTraits.csv")
+
+head(Leaf_Traits)
+
+boxplot(SLA ~ Max_Temp, data = Leaf_Traits)
+
+boxplot(LDMC ~ Max_Temp, data = Leaf_Traits)
+
+plot(Leaf_Traits$Max_Temp, Leaf_Traits$Area)
+
+plot(Leaf_Traits$Max_Temp, Leaf_Traits$LDMC)
+
+plot(Leaf_Traits$Max_Temp, Leaf_Traits$SLA)
+
+plot(Leaf_Traits$Mean_Temp, Leaf_Traits$SLA)
+
+#boxplot(LDMC ~ Species ~ Site, data = Leaf_Traits)
+
+#ggplot(aes(y = Area, x = as.factor(Site), fill = Species), data = Leaf_Traits) + geom_boxplot() + ylim(0, 1100)
+
+#plot(MugwortTraits$Mean_Temp, MugwortTraits$Max_Temp)
+#abline(minmax)
+#cor(MugwortTraits$Mean_Temp, MugwortTraits$Max_Temp)
+#summary(minmax) <- lm(MugwortTraits$Max_Temp ~ MugwortTraits$Min_Temp)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+#Mugwort Only
+
+MugwortTraits <- Leaf_Traits[Leaf_Traits$Species %in% c("Mugwort"), ]
+
+names(MugwortTraits)
+
+hist(MugwortTraits$SLA)
+
+lm.MugwortSLA <- lm(SLA ~ Mean_Temp, data = MugwortTraits)
+
+summary(lm.beta(lm.MugwortSLA))
+
+hist(MugwortTraits$LDMC)
+
+lm.MugwortLDMC <- lm(LDMC ~ Mean_Temp, data = MugwortTraits)
+
+summary(lm.beta(lm.MugwortLDMC))
+
+hist(MugwortTraits$Area)
+
+hist(log(MugwortTraits$Area))
+
+lm.MugwortArea <- lm(log(Area) ~ Mean_Temp, data = MugwortTraits)
+
+summary(lm.beta(lm.MugwortArea))
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+#Goldenrod Only
+
+GoldenrodTraits <- Leaf_Traits[Leaf_Traits$Species %in% c("Goldenrod"), ]
+
+names(GoldenrodTraits)
+
+hist(GoldenrodTraits$SLA)
+
+lm.GoldenrodSLA <- lm(SLA ~ Mean_Temp, data = GoldenrodTraits)
+
+summary(lm.beta(lm.GoldenrodSLA))
+
+hist(GoldenrodTraits$LDMC)
+
+lm.GoldenrodLDMC <- lm(LDMC ~ Mean_Temp, data = GoldenrodTraits)
+
+summary(lm.beta(lm.GoldenrodLDMC))
+
+hist(GoldenrodTraits$Area)
+
+hist(log(GoldenrodTraits$Area))
+
+lm.GoldenrodArea <- lm(log(Area) ~ Mean_Temp, data = GoldenrodTraits)
+
+summary(lm.beta(lm.GoldenrodArea))
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
