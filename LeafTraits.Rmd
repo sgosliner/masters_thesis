@@ -7,7 +7,6 @@ library(lm.beta)
 library(Ternary)
 ```
 
-
 ```{r setup, include=FALSE}
 #Both Plant Types
 
@@ -159,7 +158,7 @@ TernaryPoints(GoldenrodTraits[, c("Competitive", "Stress", "Ruderal")],
 
 ```{r}
 #temperature-color legend for above ternary plots
-legend_image <- as.raster(matrix(rbPal3(50), ncol=1))
+legend_image <- as.raster(matrix(rbPal(50), ncol=1))
 plot(c(0, 2), c(0, 1), type='n', axes=F, xlab='', ylab='')  ## ini plot2
 rasterImage(legend_image, 0, 0, .2, 1)                       ## the gradient
 lbsq <- seq.int(0, 1, l=4)                                  ## seq. for labels
