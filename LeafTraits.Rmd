@@ -2,14 +2,23 @@
 title: "Leaf Traits"
 output: html_document
 ---
+```{r}
+library(lm.beta)
+library(Ternary)
+```
+
 
 ```{r setup, include=FALSE}
 #Both Plant Types
 
 Leaf_Traits <- read.csv("https://github.com/sgosliner/masters_thesis/raw/main/Gosliner_MastersLeafTraits.csv")
+#loading leaf trait data
+#competitive, stress tolerant, and ruderal variables represent life history strategy identities calculated using StrateFy tool from Pierce et al. (2017): "A global method for calculating plant CSR ecological strategies applied across biomes world-wide"
 
 head(Leaf_Traits)
 
+
+#initial data visualizations
 boxplot(SLA ~ Max_Temp, data = Leaf_Traits)
 
 boxplot(LDMC ~ Max_Temp, data = Leaf_Traits)
@@ -21,81 +30,141 @@ plot(Leaf_Traits$Max_Temp, Leaf_Traits$LDMC)
 plot(Leaf_Traits$Max_Temp, Leaf_Traits$SLA)
 
 plot(Leaf_Traits$Mean_Temp, Leaf_Traits$SLA)
-
-#boxplot(LDMC ~ Species ~ Site, data = Leaf_Traits)
-
-#ggplot(aes(y = Area, x = as.factor(Site), fill = Species), data = Leaf_Traits) + geom_boxplot() + ylim(0, 1100)
-
-#plot(MugwortTraits$Mean_Temp, MugwortTraits$Max_Temp)
-#abline(minmax)
-#cor(MugwortTraits$Mean_Temp, MugwortTraits$Max_Temp)
-#summary(minmax) <- lm(MugwortTraits$Max_Temp ~ MugwortTraits$Min_Temp)
 ```
-
-## R Markdown
-
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
-
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
 
 ```{r cars}
-#Mugwort Only
+#Mugwort Only analysis. Creating linear models to predict leaf traits by mean temperature
 
 MugwortTraits <- Leaf_Traits[Leaf_Traits$Species %in% c("Mugwort"), ]
-
-names(MugwortTraits)
+#creating dataframe of only mugwort data
 
 hist(MugwortTraits$SLA)
+#visualizing SLA. Data is relatively normal and does not need to be transformed
 
 lm.MugwortSLA <- lm(SLA ~ Mean_Temp, data = MugwortTraits)
+#linear model to predict SLA by mean temperature
 
 summary(lm.beta(lm.MugwortSLA))
+#summary of linear model with beta coefficients
 
 hist(MugwortTraits$LDMC)
+#visualizing LDMC. Data is relatively normal and does not need to be transformed
 
 lm.MugwortLDMC <- lm(LDMC ~ Mean_Temp, data = MugwortTraits)
+#linear model to predict LDMC by mean temperature
 
 summary(lm.beta(lm.MugwortLDMC))
+#summary of linear model with beta coefficients
 
 hist(MugwortTraits$Area)
+#visualizing leaf area. Data is right skewed and needs to be transformed to achieve normality
 
 hist(log(MugwortTraits$Area))
+#log transformed leaf area is relatively normal and will be used in the linear model
 
 lm.MugwortArea <- lm(log(Area) ~ Mean_Temp, data = MugwortTraits)
+#linear model to predict log(leaf area) by mean temperature
 
 summary(lm.beta(lm.MugwortArea))
+#summary of linear model with beta coefficients
 ```
 
-## Including Plots
-
-You can also embed plots, for example:
 
 ```{r pressure, echo=FALSE}
-#Goldenrod Only
+#Goldenrod Only analysis
 
 GoldenrodTraits <- Leaf_Traits[Leaf_Traits$Species %in% c("Goldenrod"), ]
-
-names(GoldenrodTraits)
+#creating dataframe of only goldenrod data
 
 hist(GoldenrodTraits$SLA)
+#visualizing SLA. Data is relatively normal and does not need to be transformed
 
 lm.GoldenrodSLA <- lm(SLA ~ Mean_Temp, data = GoldenrodTraits)
+#linear model to predict SLA by mean temperature
 
 summary(lm.beta(lm.GoldenrodSLA))
+#summary of linear model with beta coefficients
 
 hist(GoldenrodTraits$LDMC)
+#visualizing LDMC. Data is relatively normal and does not need to be transformed
 
 lm.GoldenrodLDMC <- lm(LDMC ~ Mean_Temp, data = GoldenrodTraits)
+#linear model to predict LDMC by mean temperature
 
 summary(lm.beta(lm.GoldenrodLDMC))
+#summary of linear model with beta coefficients
 
 hist(GoldenrodTraits$Area)
+#visualizing leaf area. Data is right skewed and needs to be transformed to achieve normality
 
 hist(log(GoldenrodTraits$Area))
+#log transformed leaf area is relatively normal and will be used in the linear model
 
 lm.GoldenrodArea <- lm(log(Area) ~ Mean_Temp, data = GoldenrodTraits)
+#linear model to predict log(leaf area) by mean temperature
 
 summary(lm.beta(lm.GoldenrodArea))
+#summary of linear model with beta coefficients
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+```{r}
+#Creating CSR ternary plots
+
+#Mugwort ternary plot
+
+rbPal <- colorRampPalette(c("cornflowerblue", "#eed6ff", "red"))
+#creating blue to red color palette
+
+MugwortTraits$Col <- rbPal(50)[as.numeric(cut(MugwortTraits$Mean_Temp,breaks = 50))]
+#assigning color values to mugwort data according to mean temperature. Colder temps get bluer colors and warmer temps get redder colors.
+
+#ternary plot with just mugwort data. Colors sorted by mean temp
+par(mfrow = c(1, 2), mar = rep(0.3, 4))
+TernaryPlot(alab = "% Competitive \u2192", blab = "% Stress Tolerant \u2192", clab = "\u2190 % Ruderal", main = "Mugwort",
+            lab.col = "black",
+            point = 'up', lab.cex = 0.8, grid.minor.lines = 0,
+            grid.lty = 'solid', col = "black", grid.col = 'grey90', 
+            axis.col = rgb(0.6, 0.6, 0.6), ticks.col = "grey80",
+            axis.rotate = FALSE,
+            padding = 0.08)
+
+TernaryPoints(MugwortTraits[, c("Competitive", "Stress", "Ruderal")],
+              cex = .8,
+              col = MugwortTraits$Col,
+              pch = 16
+              )
+
+
+#Goldenrod ternary plot
+
+GoldenrodTraits$Col <- rbPal(50)[as.numeric(cut(GoldenrodTraits$Mean_Temp,breaks = 50))]
+#assigning color values to goldenrod data according to mean temperature. Colder temps get bluer colors and warmer temps get redder colors.
+
+#ternary plot with just goldenrod data. Colors sorted by mean temp
+par(mfrow = c(1, 2), mar = rep(0.3, 4))
+TernaryPlot(alab = "% Competitive \u2192", blab = "% Stress Tolerant \u2192", clab = "\u2190 % Ruderal", main = "Goldenrod",
+            lab.col = "black",
+            point = 'up', lab.cex = 0.8, grid.minor.lines = 0,
+            grid.lty = 'solid', col = "black", grid.col = 'grey90', 
+            axis.col = rgb(0.6, 0.6, 0.6), ticks.col = "grey80",
+            axis.rotate = FALSE,
+            padding = 0.08)
+
+TernaryPoints(GoldenrodTraits[, c("Competitive", "Stress", "Ruderal")],
+              cex = .8,
+              col= GoldenrodTraits$Col,
+              pch = 17
+              )
+```
+
+```{r}
+#temperature-color legend for above ternary plots
+legend_image <- as.raster(matrix(rbPal3(50), ncol=1))
+plot(c(0, 2), c(0, 1), type='n', axes=F, xlab='', ylab='')  ## ini plot2
+rasterImage(legend_image, 0, 0, .2, 1)                       ## the gradient
+lbsq <- seq.int(0, 1, l=4)                                  ## seq. for labels
+axis(4, at=lbsq, pos=0.2, labels=F, col=0, col.ticks=1, tck=-.1)  ## axis ticks
+mtext(seq(19.5,21,l=4), 4, -24.5, at=lbsq, las=2, cex=1.5)                      ## tick labels
+mtext('Mean Temperature (\u00B0C)', 3, .8, cex=1.5, adj=.1, font=1) 
+```
+
